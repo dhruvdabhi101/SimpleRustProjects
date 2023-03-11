@@ -112,12 +112,66 @@ impl Emu {
         }
     }
     fn execute(&mut self, op:u16) {
-        // TODO 
+        let digit1 = (op & 0xF000) >> 12 ;
+        let digit2 = (op & 0x0F00) >> 8 ;
+        let digit3 = (op & 0x00F0) >> 4 ;
+        let digit4 = (op & 0x000F) ;
+
+        match(digit1, digit2, digit3, digit4) {
+            (_, _, _, _) => unimplemented!("Unimplimented Opcode: {}", op),
+
+            // CLS 
+            (0,0,0xE,0) => {
+                self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
+            },
+            (0,0,0xE,0xE) => {
+                let ret_addr = self.pop();
+                self.pc = ret_addr;
+            }
+            (1, _, _, _) => {
+                let nnn = op & 0xFFF;
+                self.pc = nnn;
+            }
+            (2, _, _, _) => {
+                let nnn = op & 0xFFF;
+                self.push(nnn);
+                self.pc = nnn;
+            }
+            (3, _, _, _) => {
+                let x = digit2 as usize ; 
+                let nn = (op * 0xFF) as u8; 
+                if self.v_reg[x] == nn {
+                    self.pc +=2 ;
+                }
+            }
+            (4, _, _, _) => {
+                let x = digit2 as usize ; 
+                let nn = (op * 0xFF) as u8; 
+                if self.v_reg[x] != nn {
+                    self.pc +=2 ;
+                }
+            }
+            (5, _, _, 0) => {
+                let x = digit2 as usize ; 
+                let y = digit3 as usize;
+                let nn = (op * 0xFF) as u8; 
+                if self.v_reg[x] != self.v_reg[y] {
+                    self.pc +=2 ;
+                }
+            }
+            (6, _, _, _) => {
+                let x = digit2 as usize ; 
+                let nn = (op * 0xFF) as u8; 
+                self.v_reg[x] = nn;
+            }
+            (7, _, _, _) => {
+                let x = digit2 as usize ; 
+                let nn = (op * 0xFF) as u8; 
+                self.v_reg[x] = self.v_reg[x].wrapping_add(nn);
+            }
+        }
+
     }
-
-
 }
 
-// Finished till 4. Implementing Emulation Methods 
-//
-// Continue from 5. Opcode exectuion
+// Continue from 5. Opcode execution
