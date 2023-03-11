@@ -1,1 +1,0 @@
-/Users/dhruvdabhi/rust/basic_projects/chip8/desktop/target/debug/desktop: /Users/dhruvdabhi/rust/basic_projects/chip8/chip8_core/src/lib.rs /Users/dhruvdabhi/rust/basic_projects/chip8/desktop/src/main.rs
