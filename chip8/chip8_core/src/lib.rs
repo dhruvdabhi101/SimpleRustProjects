@@ -118,7 +118,7 @@ impl Emu {
         let digit4 = (op & 0x000F) ;
 
         match(digit1, digit2, digit3, digit4) {
-            (_, _, _, _) => unimplemented!("Unimplimented Opcode: {}", op),
+            (_, _, _, _) => unimplemented!("Unimplemented Opcode: {}", op),
 
             // CLS 
             (0,0,0xE,0) => {
