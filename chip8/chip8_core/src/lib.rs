@@ -115,7 +115,7 @@ impl Emu {
         let digit1 = (op & 0xF000) >> 12 ;
         let digit2 = (op & 0x0F00) >> 8 ;
         let digit3 = (op & 0x00F0) >> 4 ;
-        let digit4 = (op & 0x000F) ;
+        let digit4 = op & 0x000F;
 
         match(digit1, digit2, digit3, digit4) {
             (_, _, _, _) => unimplemented!("Unimplemented Opcode: {}", op),
@@ -127,30 +127,30 @@ impl Emu {
             (0,0,0xE,0xE) => {
                 let ret_addr = self.pop();
                 self.pc = ret_addr;
-            }
+            },
             (1, _, _, _) => {
                 let nnn = op & 0xFFF;
                 self.pc = nnn;
-            }
+            },
             (2, _, _, _) => {
                 let nnn = op & 0xFFF;
                 self.push(nnn);
                 self.pc = nnn;
-            }
+            },
             (3, _, _, _) => {
                 let x = digit2 as usize ; 
                 let nn = (op * 0xFF) as u8; 
                 if self.v_reg[x] == nn {
                     self.pc +=2 ;
                 }
-            }
+            },
             (4, _, _, _) => {
                 let x = digit2 as usize ; 
                 let nn = (op * 0xFF) as u8; 
                 if self.v_reg[x] != nn {
                     self.pc +=2 ;
                 }
-            }
+            },
             (5, _, _, 0) => {
                 let x = digit2 as usize ; 
                 let y = digit3 as usize;
@@ -158,27 +158,27 @@ impl Emu {
                 if self.v_reg[x] != self.v_reg[y] {
                     self.pc +=2 ;
                 }
-            }
+            },
             (6, _, _, _) => {
                 let x = digit2 as usize ; 
                 let nn = (op * 0xFF) as u8; 
                 self.v_reg[x] = nn;
-            }
+            },
             (7, _, _, _) => {
                 let x = digit2 as usize ; 
                 let nn = (op * 0xFF) as u8; 
                 self.v_reg[x] = self.v_reg[x].wrapping_add(nn);
-            }
+            },
             (8, _, _, 0) => {
                 let x = digit2 as usize;
                 let y = digit3 as usize;
                 self.v_reg[x] = self.v_reg[y];
-            }
+            },
             (8, _, _, 1) => {
                 let x = digit2 as usize;
                 let y = digit3 as usize;
                 self.v_reg[x] != self.v_reg[y];
-            }
+            },
             (8, _, _, 4) => {
                 let x = digit2 as usize;
                 let y = digit3 as usize;
@@ -188,7 +188,7 @@ impl Emu {
 
                 self.v_reg[x] = new_vx;
                 self.v_reg[0xF] = new_vf;
-            }
+            },
             (8, _, _, 5) => {
                 let x = digit2 as usize;
                 let y = digit3 as usize;
@@ -198,13 +198,13 @@ impl Emu {
 
                 self.v_reg[x] = new_vx;
                 self.v_reg[0xF] = new_vf;
-            }
+            },
             (8, _, _, 6) => {
                 let x = digit2 as usize;
                 let lab = self.v_reg[x] & 1; 
                 self.v_reg[x] >>= 1 ;
                 self.v_reg[0xF] = lab;
-            }
+            },
 
             (8, _, _, 7) => {
                 let x = digit2 as usize;
@@ -215,7 +215,69 @@ impl Emu {
 
                 self.v_reg[x] = new_vx;
                 self.v_reg[0xF] = new_vf;
+            },
+            (8, _, _, 0xE) => {
+                let x = digit2 as usize;
+                let msb = (self.v_reg[x] >> 7) & 1 ;
+                self.v_reg[x] <<= 1 ;
+                self.v_reg[0xF] = msb ;
+            },
+
+            (9, _, _, 0) => {
+                let x = digit2 as usize;
+                let y = digit3 as usize;
+                if self.v_reg[x] != self.v_reg[y] {
+                    self.pc += 2;
+                }
+            },
+            (0xA, _, _, _) => {
+                let nnn = op & 0xFFF;
+                self.i_reg = nnn;
+            },
+
+            (0xB, _, _, _) => {
+                let nnn = op & 0xFFF;
+                self.pc = (self.v_reg[0] as u16) + nnn;
+            },
+
+            (0xC, _, _, _) => {
+                let x = digit2 as usize;
+                let nn = (op & 0xFF) as u8 ;
+                let rng: u8 = random();
+                self.v_reg[x] = rng & nn;
+            },
+
+            // DRAW 
+            (0xD, _, _, _) => {
+                let x_coord = self.v_reg[digit2 as usize] as u16 ; 
+                let y_corrd = self.v_reg[digit3 as usize] as u17 ; 
+                // the last digit determines how many rows high our sprite is 
+                let num_rows = digit4;
+                // Keep track if any pixel were flipped 
+                let mut flipped = false;
+                for y_line in 0..num_rows {
+                    let addr = self.i_reg + y_line as u16 ;
+                    let pixel = self.ram[addr as usize];
+
+                    for x_line in 0..8 {
+                        if(pixels & (0b1000_000 >> x_line) != 0) {
+                            let x = (x_coord + x_line) as usize % SCREEN_WIDTH;
+                            let y = (y_coord + y_line) as usize % SCREEN_HEIGHT;
+
+                            let idx = x + SCREEN_WIDTH * y ;
+                            flipped |= self.screen[idx];
+                            self.screen[idx] ^= true;
+                        }
+                    }
+                }
+                if flipped {
+                    self.v_reg[0xF] = 1;
+                }else {
+                    self.v_reg[0xF] = 0;
+                }
             }
+
+
 
         }
 
